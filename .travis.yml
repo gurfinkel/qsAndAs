@@ -1,0 +1,23 @@
+sudo: required
+language: generic
+
+services:
+  - docker
+
+before_install:
+  - docker build -t flatorez/interviewbot-client -f Dockerfile.dev .
+
+script:
+  - docker run -e CI=true flatorez/interviewbot-client npm run test -- --coverage
+
+deploy:
+  provider: elasticbeanstalk
+  region: "eu-west-2"
+  app: "interviewtime-client"
+  env: "Interviewtime-env"
+  bucket_name: "elasticbeanstalk-eu-west-2-321085401109"
+  bucket_path: "interviewtime-client"
+  on:
+    branch: master
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_SECRET_KEY
