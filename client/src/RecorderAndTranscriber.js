@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -14,13 +14,13 @@ import {v4 as uuid} from "uuid";
 
 export default function RecorderAndTranscriber() {
     const initialRecorderState = {
+        initTimer: false,
         seconds: 0,
         stream: null,
         recorder: null,
     };
     const audioType = 'audio/ogg; codecs=opus';
 
-    const savedCallback = useRef();
     const [recorderState, setRecorderState] = useState(initialRecorderState);
     const [records, setRecords] = useState([]);
     const [speeches, setSpeeches] = useState([]);
@@ -31,7 +31,12 @@ export default function RecorderAndTranscriber() {
         if (recorderState.recorder && 'inactive' === recorderState.recorder.state) {
             const chunks = [];
 
-            savedCallback.current = timerCallback;
+            setRecorderState((prevState) => {
+                return {
+                    ...prevState,
+                    initTimer: true,
+                };
+            });
             recorderState.recorder.start();
 
             recorderState.recorder.ondataavailable = (e) => {
@@ -47,6 +52,7 @@ export default function RecorderAndTranscriber() {
                 setRecorderState((prevState) => {
                     return {
                         ...prevState,
+                        initTimer: false,
                         seconds: 0,
                     };
                 });
@@ -56,7 +62,6 @@ export default function RecorderAndTranscriber() {
 
     const handleStop = function() {
         if (recorderState.recorder && 'recording' === recorderState.recorder.state) {
-            savedCallback.current = () => {};
             recorderState.recorder.stop();
         }
     }
@@ -128,21 +133,6 @@ export default function RecorderAndTranscriber() {
         });
     }
 
-    const timerCallback = function() {
-        setRecorderState((prevState) => {
-            if (0 <= prevState.seconds && 9 > prevState.seconds) {
-                return {
-                    ...prevState,
-                    seconds: 1 + prevState.seconds,
-                };
-            } else {
-                handleStop();
-
-                return prevState;
-            }
-        });
-    }
-
     useEffect(async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -170,15 +160,26 @@ export default function RecorderAndTranscriber() {
     }, [recorderState.stream]);
 
     useEffect(() => {
-        savedCallback.current = () => {};
+        const tick = function() {
+            setRecorderState((prevState) => {
+                if (0 <= prevState.seconds && 9 > prevState.seconds) {
+                    return {
+                        ...prevState,
+                        seconds: 1 + prevState.seconds,
+                    };
+                } else {
+                    handleStop();
 
-        function tick() {
-            savedCallback.current();
+                    return prevState;
+                }
+            });
         }
 
-        let intervalId = setInterval(tick, 1000);
-        return () => clearInterval(intervalId);
-    }, []);
+        if (recorderState.initTimer) {
+            let intervalId = setInterval(tick, 1000);
+            return () => clearInterval(intervalId);
+        }
+    }, [recorderState.initTimer]);
 
     return (
         <div className='container'>
