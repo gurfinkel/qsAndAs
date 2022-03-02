@@ -162,7 +162,7 @@ export default function RecorderAndTranscriber() {
     useEffect(() => {
         const tick = function() {
             setRecorderState((prevState) => {
-                if (0 <= prevState.seconds && 9 > prevState.seconds) {
+                if (0 <= prevState.seconds && 59 > prevState.seconds) {
                     return {
                         ...prevState,
                         seconds: 1 + prevState.seconds,
