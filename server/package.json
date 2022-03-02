@@ -1,0 +1,21 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "description": "backend for qsAndAs platform",
+  "dependencies": {
+    "@google-cloud/speech": "^4.9.0",
+    "@google-cloud/text-to-speech": "^3.4.0",
+    "body-parser": "*",
+    "cors": "2.8.4",
+    "express": "4.16.3",
+    "multer": "^1.4.4",
+    "nodemon": "1.18.3",
+    "dgraph-js-http": "^21.3.1"
+  },
+  "scripts": {
+    "dev": "nodemon",
+    "start": "node src/index.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
