@@ -102,6 +102,7 @@ const postQuestionAndAnswer = async function(question, answer) {
         trieNode['TrieNode.nodes'] = [
             {
                 'TrieNode.text': answer,
+                'TrieNode.isAnswer': true,
                 'TrieNode.isEnd': false,
                 'TrieNode.isRoot': false,
             }
@@ -223,6 +224,7 @@ const getTrieNodeChildren = async function(uid) {
               TrieNode.text
             }
             TrieNode.text
+            TrieNode.isAnswer
             TrieNode.isEnd
             TrieNode.isRoot
           }
@@ -495,7 +497,6 @@ app.post('/transcription', type, async (req, res) => {
         console.error(e);
         res.status(500);
     }
-
 });
 
 app.listen(5000, err => {

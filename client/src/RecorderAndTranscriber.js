@@ -37,7 +37,6 @@ export default function RecorderAndTranscriber() {
                     initTimer: true,
                 };
             });
-            recorderState.recorder.start();
 
             recorderState.recorder.ondataavailable = (e) => {
                 chunks.push(e.data);
@@ -57,6 +56,8 @@ export default function RecorderAndTranscriber() {
                     };
                 });
             };
+
+            recorderState.recorder.start();
         }
     }
 
@@ -133,8 +134,8 @@ export default function RecorderAndTranscriber() {
         });
     }
 
-    useEffect(async () => {
-        try {
+    useEffect(() => {
+        const fetchStream = async function() {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             setRecorderState((prevState) => {
@@ -143,9 +144,9 @@ export default function RecorderAndTranscriber() {
                     stream,
                 };
             });
-        } catch (err) {
-            console.log(err);
         }
+
+        fetchStream();
     }, []);
 
     useEffect(() => {
@@ -234,6 +235,7 @@ export default function RecorderAndTranscriber() {
                                     <button
                                         className='wer-button'
                                         title='Get Word Error Rate for record'
+                                        disabled={!transcriptions.find((item) => item.key === record.key)}
                                         onClick={() => getWordErrorRates(record.key)}
                                     >
                                         <FontAwesomeIcon icon={faBug} />
@@ -241,6 +243,7 @@ export default function RecorderAndTranscriber() {
                                     <button
                                         className='speech-button'
                                         title='Get Speech for record'
+                                        disabled={!transcriptions.find((item) => item.key === record.key)}
                                         onClick={() => getAnswer(record.key)}
                                     >
                                         <FontAwesomeIcon icon={faComments} />
