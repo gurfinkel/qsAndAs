@@ -17,6 +17,10 @@ services:
     volumes:
       - /app/node_modules
       - ./server:/app
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/something-something.json
+      - DGRAPH_HOST=https://something-something.eu-central-1.aws.cloud.dgraph.io
+      - DGRAPH_KEY=something
   client:
     build:
       dockerfile: Dockerfile.dev

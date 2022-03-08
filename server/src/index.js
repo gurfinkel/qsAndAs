@@ -59,21 +59,21 @@ const postQuestionAndAnswer = async function(question, answer) {
     const questionWords = question.split(' ');
     const root = await getTrieRoot();
     let words = await getTrieNodeChildren(root.uid);
-    let lastWordInTrie = !words[0]['TrieNode.nodes'] ? words[0] : null;
+    let lastWordInTrie = !words.length ? words[0] : null;
     let idx = 0;
 
     while (questionWords.length > idx && !lastWordInTrie) {
         const questionWord = questionWords[idx];
 
-        for (let i = 0; words[0]['TrieNode.nodes'].length > i; ++i) {
-            const word = words[0]['TrieNode.nodes'][i];
+        for (let i = 0; words.length > i; ++i) {
+            const word = words[i];
 
             if (questionWord === word['TrieNode.text']) {
                 words = await getTrieNodeChildren(word.uid);
                 break;
             }
 
-            if (words[0]['TrieNode.nodes'].length === 1 + i) {
+            if (words.length === 1 + i) {
                 lastWordInTrie = words[0];
                 --idx;
             }
@@ -89,6 +89,7 @@ const postQuestionAndAnswer = async function(question, answer) {
             trieNode['TrieNode.nodes'] = [
                 {
                     'TrieNode.text': questionWords[idx],
+                    'TrieNode.isAnswer': false,
                     'TrieNode.isEnd': questionWords.length === 1 + idx,
                     'TrieNode.isRoot': false,
                 }
@@ -141,7 +142,7 @@ const getAnswerForQuestion = async function(question) {
     let answer = `I don't have an answer for you!`;
 
     for (const questionWord of questionWords) {
-        for (const word of words[0]['TrieNode.nodes']) {
+        for (const word of words) {
             if (questionWord === word['TrieNode.text']) {
                 words = await getTrieNodeChildren(word.uid);
                 break;
@@ -149,8 +150,13 @@ const getAnswerForQuestion = async function(question) {
         }
     }
 
-    if (words && 1 === words.length && words[0]['TrieNode.isEnd']) {
-        answer = words[0]['TrieNode.nodes'][0]['TrieNode.text'];
+    if (words && words.length) {
+        for (const word of words) {
+            if (word['TrieNode.isAnswer']) {
+                answer = word['TrieNode.text'];
+                break;
+            }
+        }
     }
 
     return answer;
@@ -197,7 +203,7 @@ const getTrieRoot = async function() {
         // Commit transaction.
         await txn.commit();
 
-        console.log(res.extensions.server_latency);
+        // console.log(res.extensions.server_latency);
 
         return res.data.roots.length ? res.data.roots[0] : {};
     } catch (e) {
@@ -222,20 +228,39 @@ const getTrieNodeChildren = async function(uid) {
             TrieNode.nodes {
               uid
               TrieNode.text
+              TrieNode.isAnswer
+              TrieNode.isEnd
+              TrieNode.isRoot
             }
-            TrieNode.text
-            TrieNode.isAnswer
-            TrieNode.isEnd
-            TrieNode.isRoot
           }
         }
     `;
     const vars = { $a: uid };
-    const res = await dgraphClient.newTxn().queryWithVars(query, vars);
 
-    console.log(res.extensions.server_latency);
+    // Create a new transaction.
+    const txn = dgraphClient.newTxn();
 
-    return res.data.words;
+    try {
+        // Run query.
+        const res = await txn.queryWithVars(query, vars);
+
+        // Commit transaction.
+        await txn.commit();
+
+        // console.log(res.extensions.server_latency);
+
+        return res.data.words.length ? res.data.words[0]['TrieNode.nodes'] : [];
+    } catch (e) {
+        if (e === dgraph.ERR_ABORTED) {
+            // Retry or handle exception.
+        } else {
+            throw e;
+        }
+    } finally {
+        // Clean up. Calling this after txn.commit() is a no-op
+        // and hence safe.
+        await txn.discard();
+    }
 };
 
 // get WER.html for one pair of strings: (hypothesis, reference).
